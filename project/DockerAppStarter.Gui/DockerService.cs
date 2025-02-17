@@ -136,7 +136,15 @@ namespace DockerAppStarter.Gui
             {
                 try
                 {
-                    using Process _ = Process.Start(startupCommand, args);
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = startupCommand,
+                        Arguments = string.Join(TextConstants.Space, args),
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        CreateNoWindow = true
+                    };
+
+                    using Process? _ = Process.Start(startInfo);
                 }
                 catch
                 {

@@ -25,5 +25,7 @@
         public const string AtLine = " at line `{0}`";
 
         public const string Period = ".";
+
+        public const string Space = " ";
     }
 }
