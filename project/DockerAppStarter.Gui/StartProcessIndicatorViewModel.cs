@@ -8,17 +8,18 @@ namespace DockerAppStarter.Gui
     internal class StartProcessIndicatorViewModel
         : Observable
     {
+        private readonly Dispatcher _dispatcher;
         private string _label;
         private double? _minimum;
         private double? _maximum;
         private double? _current;
         private bool? _status;
         private bool _isIndeterminate;
+        private bool _isDependency;
 
-        private readonly Dispatcher _dispatcher;
-
-        public StartProcessIndicatorViewModel(string label, Func<StartProcessIndicatorCallbackContext, Task> callback, CancellationToken cancellationToken = default)
+        public StartProcessIndicatorViewModel(bool isDependency, string label, Func<StartProcessIndicatorCallbackContext, Task> callback, CancellationToken cancellationToken = default)
         {
+            _isDependency = isDependency;
             _label = label;
             _dispatcher = Dispatcher.CurrentDispatcher;
 
@@ -33,6 +34,18 @@ namespace DockerAppStarter.Gui
             StartProcessIndicatorCallbackContext ctx = new(this, cancellationToken);
 
             _ = Task.Factory.StartNew(() => Callback(ctx), cancellationToken);
+        }
+
+        public StartProcessIndicatorViewModel(string label, Func<StartProcessIndicatorCallbackContext, Task> callback, CancellationToken cancellationToken = default)
+            : this(false, label, callback, cancellationToken)
+        {
+            // Ignore
+        }
+
+        public bool IsDependency
+        {
+            get { return _isDependency; }
+            set { _ = Set(ref _isDependency, value); }
         }
 
         public string Label

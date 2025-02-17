@@ -27,5 +27,7 @@
         public const string Period = ".";
 
         public const string Space = " ";
+
+        public const string SpacedComma = ", ";
     }
 }

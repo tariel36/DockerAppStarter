@@ -29,7 +29,25 @@ namespace DockerAppStarter.Gui
 
             LoadingSteps =
             [
-                new(TranslationProvider.Instance.GetValueOrDefault(static () => Translations.StartingDockerEllipsis), DockerStarter, _cancellationTokenSource.Token),
+                new(TranslationProvider.Instance.GetValueOrDefault(static () => Translations.StartingDockerEllipsis), DockerStarter, _cancellationTokenSource.Token)
+            ];
+
+            foreach (StartProcessIndicatorViewModel svc in DockerStartupContext.DependencyNames.Select(
+                         x => new StartProcessIndicatorViewModel(
+                             true,
+                             TranslationProvider.Instance.GetValueOrDefault(
+                                 static () => Translations.Starting_0_,
+                                 new()
+                                 {
+                                     { TextConstants.Zero, x }
+                                 }),
+                             ctx => DockerServiceStarter(x, ctx),
+                             _cancellationTokenSource.Token)))
+            {
+                LoadingSteps.Add(svc);
+            }
+
+            LoadingSteps.Add(
                 new(
                     TranslationProvider.Instance.GetValueOrDefault(
                         static () => Translations.Starting_0_,
@@ -38,7 +56,9 @@ namespace DockerAppStarter.Gui
                             { TextConstants.Zero, DockerStartupContext.ServiceName.OrCallerThrow(TextConstants.DockerServiceNameNotSet) }
                         }),
                     DockerServiceStarter,
-                    _cancellationTokenSource.Token),
+                    _cancellationTokenSource.Token));
+
+            LoadingSteps.Add(
                 new(
                     TranslationProvider.Instance.GetValueOrDefault(
                         static () => Translations.Is_0_Running,
@@ -47,18 +67,14 @@ namespace DockerAppStarter.Gui
                             { TextConstants.Zero, DockerStartupContext.ServiceName.OrCallerThrow(TextConstants.DockerServiceNameNotSet) }
                         }),
                     IsServiceRunning,
-                    _cancellationTokenSource.Token)
-            ];
+                    _cancellationTokenSource.Token));
 
             InitializeComponent();
 
             DataContext = this;
         }
 
-        public ObservableCollection<StartProcessIndicatorViewModel> LoadingSteps
-        {
-            get;
-        }
+        public ObservableCollection<StartProcessIndicatorViewModel> LoadingSteps { get; }
 
         public string? ImagePath
         {
@@ -82,13 +98,13 @@ namespace DockerAppStarter.Gui
             ctx.Complete(await docker.IsRunningAsync(ctx.CancellationToken));
         }
 
-        private static async Task DockerServiceStarter(StartProcessIndicatorCallbackContext ctx)
+        private static async Task DockerServiceStarter(string svc, StartProcessIndicatorCallbackContext ctx)
         {
             DockerService docker = new();
 
             string containerFullName = docker.Combine(
                 DockerStartupContext.StackName,
-                DockerStartupContext.ServiceName.OrCallerThrow(TextConstants.DockerServiceNameNotSet));
+                svc);
 
             await docker.StartAsync(
                 containerFullName,
@@ -152,6 +168,23 @@ namespace DockerAppStarter.Gui
             _cancellationTokenSource.Cancel();
 
             TryClose();
+        }
+
+        private async Task DockerServiceStarter(StartProcessIndicatorCallbackContext ctx)
+        {
+            if (DockerStartupContext.DependencyNames.Count > 0)
+            {
+                List<StartProcessIndicatorViewModel> dependencies = LoadingSteps.Where(static x => x.IsDependency).ToList();
+
+                while (dependencies.Any(static x => x.Status != true))
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(1000), ctx.CancellationToken);
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(1000), ctx.CancellationToken);
+            }
+
+            await DockerServiceStarter(DockerStartupContext.ServiceName.OrCallerThrow(TextConstants.DockerServiceNameNotSet), ctx);
         }
 
         private async Task IsAllComplete()

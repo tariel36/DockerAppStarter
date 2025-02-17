@@ -14,10 +14,13 @@ namespace DockerAppStarter.Gui
         private void App_OnStartup(object sender, StartupEventArgs args)
         {
             const string ServiceTag = "-sv";
+            const string ServiceDependenciesTag = "-d";
             const string StackTag = "-s";
             const string IconTag = "-i";
 
             string [] argv = args.Args;
+
+            List<string> dependencyNames = new();
 
             for (int i = 0; i < argv.Length; ++i)
             {
@@ -26,6 +29,20 @@ namespace DockerAppStarter.Gui
                     case ServiceTag:
                     {
                         DockerStartupContext.ServiceName = TryGetNext(argv, i);
+
+                        break;
+                    }
+
+                    case ServiceDependenciesTag:
+                    {
+                        string? serviceName = TryGetNext(argv, i);
+
+                        if (string.IsNullOrWhiteSpace(serviceName))
+                        {
+                            break;
+                        }
+
+                        dependencyNames.Add(serviceName);
 
                         break;
                     }
@@ -45,6 +62,8 @@ namespace DockerAppStarter.Gui
                     }
                 }
             }
+
+            DockerStartupContext.DependencyNames = dependencyNames;
 
             IReadOnlyDictionary<string, string> settings = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(AppSettingsFilePath))
                                                            ?? new();
