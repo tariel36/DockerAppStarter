@@ -12,6 +12,8 @@
 
         public string? IconFilePath { get; init; }
 
+        public string? ImageFilePath { get; init; }
+
         public IReadOnlyCollection<StartupConfiguration>? Dependencies { get; init; }
     }
 }

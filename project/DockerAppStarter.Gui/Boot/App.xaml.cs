@@ -64,7 +64,7 @@ namespace DockerAppStarter.Gui.Boot
             const string ServiceTag = "-sv";
             const string ServiceDependenciesTag = "-d";
             const string StackTag = "-s";
-            const string IconTag = "-i";
+            const string ImageTag = "-i";
 
             List<string> dependencyNames = [ ];
 
@@ -108,11 +108,11 @@ namespace DockerAppStarter.Gui.Boot
                         break;
                     }
 
-                    case IconTag:
+                    case ImageTag:
                     {
                         startupConfiguration = startupConfiguration with
                         {
-                            IconFilePath = TryGetNext(argv, i)
+                            ImageFilePath = TryGetNext(argv, i)
                         };
 
                         break;

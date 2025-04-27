@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using DockerAppStarter.Gui.Assets.I18N;
 using DockerAppStarter.Gui.Core;
 using DockerAppStarter.Gui.Docker;
@@ -18,6 +20,7 @@ namespace DockerAppStarter.Gui.View.Windows.MainWindowWindow
         : INotifyPropertyChanged,
           IOnPropertyChanged
     {
+        private const string DefaultIconFilePath = "Assets/Images/default.ico";
         private const string ExplorerExecutable = "explorer";
         private const string BaseHosting = "http://localhost";
 
@@ -42,6 +45,8 @@ namespace DockerAppStarter.Gui.View.Windows.MainWindowWindow
                             _startupConfiguration.Stack,
                             _startupConfiguration.Service.OrCallerThrow(TranslationProvider.Instance.GetValueOrDefault(static () => Translations.DockerServiceNameNotSet))))
                 ;
+
+            Icon = ResolveIcon(_startupConfiguration);
 
             _ = Task.Factory.StartNew(IsAllComplete, _cancellationTokenSource.Token);
 
@@ -255,6 +260,15 @@ namespace DockerAppStarter.Gui.View.Windows.MainWindowWindow
             }
 
             Dispatcher.Invoke(TryClose);
+        }
+
+        private static ImageSource ResolveIcon(StartupConfiguration startupConfiguration)
+        {
+            Uri iconUri = string.IsNullOrWhiteSpace(startupConfiguration.IconFilePath)
+                ? new(DefaultIconFilePath, UriKind.RelativeOrAbsolute)
+                : new(startupConfiguration.IconFilePath, UriKind.RelativeOrAbsolute);
+
+            return BitmapFrame.Create(iconUri);
         }
 
         private static StartupConfiguration GetStartupConfiguration()

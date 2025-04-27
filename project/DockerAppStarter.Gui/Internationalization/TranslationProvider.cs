@@ -67,8 +67,8 @@ namespace DockerAppStarter.Gui.Internationalization
 
         private string ResolveString(string key)
         {
-            return _resourceManager.OrCallerThrow(Instance.GetValueOrDefault(static () => Translations.ResourceManagerIsNotSet))
-                .GetString(key, _currentCulture)
+            return (_resourceManager?
+                    .GetString(key, _currentCulture))
                 .OrFallback(CreateFallbackValue(key));
         }
 
