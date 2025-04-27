@@ -1,0 +1,17 @@
+﻿namespace DockerAppStarter.Gui
+{
+    internal record StartupConfiguration
+    {
+        public string? WindowTitle { get; init; }
+
+        public string? DisplayName { get; init; }
+
+        public string? Stack { get; init; }
+
+        public string? Service { get; init; }
+
+        public string? IconFilePath { get; init; }
+
+        public IReadOnlyCollection<StartupConfiguration>? Dependencies { get; init; }
+    }
+}

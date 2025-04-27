@@ -1,6 +1,4 @@
-﻿// ReSharper disable MemberCanBeFileLocal
-
-using System.IO;
+﻿using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using Newtonsoft.Json;
@@ -13,14 +11,52 @@ namespace DockerAppStarter.Gui
 
         private void App_OnStartup(object sender, StartupEventArgs args)
         {
+            const string FileTag = "-f";
+
+            string [] argv = args.Args;
+
+            int fileIdx = Array.FindIndex(argv, static x => string.Equals(x, FileTag));
+
+            DockerStartupContext.StartupConfiguration = fileIdx >= 0
+                ? GetStartupConfigurationFromFile(TryGetNext(argv, fileIdx))
+                : ParseArgs(argv);
+
+            IReadOnlyDictionary<string, string> settings = GetSettings();
+
+            DockerStartupContext.DockerExecutableFilePath = settings.GetValueOrDefault(nameof(DockerStartupContext.DockerExecutableFilePath));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string? TryGetNext(string [] arr, int idx)
+        {
+            return idx + 1 < arr.Length
+                ? arr[idx + 1]
+                : null;
+        }
+
+        private static StartupConfiguration? GetStartupConfigurationFromFile(string? filePath)
+        {
+            return File.Exists(filePath)
+                ? JsonConvert.DeserializeObject<StartupConfiguration>(File.ReadAllText(filePath))
+                : throw new InvalidOperationException($"File `{filePath}` does not exist.");
+        }
+
+        private static IReadOnlyDictionary<string, string> GetSettings()
+        {
+            return JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(AppSettingsFilePath))
+                   ?? new();
+        }
+
+        private static StartupConfiguration ParseArgs(string [] argv)
+        {
             const string ServiceTag = "-sv";
             const string ServiceDependenciesTag = "-d";
             const string StackTag = "-s";
             const string IconTag = "-i";
 
-            string [] argv = args.Args;
-
             List<string> dependencyNames = new();
+
+            StartupConfiguration startupConfiguration = new();
 
             for (int i = 0; i < argv.Length; ++i)
             {
@@ -28,7 +64,10 @@ namespace DockerAppStarter.Gui
                 {
                     case ServiceTag:
                     {
-                        DockerStartupContext.ServiceName = TryGetNext(argv, i);
+                        startupConfiguration = startupConfiguration with
+                        {
+                            Service = TryGetNext(argv, i)
+                        };
 
                         break;
                     }
@@ -49,34 +88,37 @@ namespace DockerAppStarter.Gui
 
                     case StackTag:
                     {
-                        DockerStartupContext.StackName = TryGetNext(argv, i);
+                        startupConfiguration = startupConfiguration with
+                        {
+                            Stack = TryGetNext(argv, i)
+                        };
 
                         break;
                     }
 
                     case IconTag:
                     {
-                        DockerStartupContext.IconFilePath = TryGetNext(argv, i);
+                        startupConfiguration = startupConfiguration with
+                        {
+                            IconFilePath = TryGetNext(argv, i)
+                        };
 
                         break;
                     }
                 }
             }
 
-            DockerStartupContext.DependencyNames = dependencyNames;
+            startupConfiguration = startupConfiguration with
+            {
+                Dependencies = dependencyNames.Select(
+                        static x => new StartupConfiguration
+                        {
+                            Service = x
+                        })
+                    .ToList()
+            };
 
-            IReadOnlyDictionary<string, string> settings = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(AppSettingsFilePath))
-                                                           ?? new();
-
-            DockerStartupContext.DockerExecutableFilePath = settings.GetValueOrDefault(nameof(DockerStartupContext.DockerExecutableFilePath));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static string? TryGetNext(string [] arr, int idx)
-        {
-            return idx + 1 < arr.Length
-                ? arr[idx + 1]
-                : null;
+            return startupConfiguration;
         }
     }
 }

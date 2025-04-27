@@ -6,7 +6,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:gui="clr-namespace:DockerAppStarter.Gui"
         mc:Ignorable="d"
-        Title="MainWindow"
         Height="289"
         Width="299"
         d:DataContext="{d:DesignInstance Type=gui:MainWindow, IsDesignTimeCreatable=True}">
