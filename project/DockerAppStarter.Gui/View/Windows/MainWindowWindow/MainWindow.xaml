@@ -1,0 +1,57 @@
+﻿<Window x:Class="DockerAppStarter.Gui.View.Windows.MainWindowWindow.MainWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mainWindowWindow="clr-namespace:DockerAppStarter.Gui.View.Windows.MainWindowWindow"
+        xmlns:converters="clr-namespace:DockerAppStarter.Gui.View.Converters"
+        xmlns:extensions="clr-namespace:DockerAppStarter.Gui.View.Extensions"
+        mc:Ignorable="d"
+        Height="289"
+        Width="299"
+        d:DataContext="{d:DesignInstance Type=mainWindowWindow:MainWindow, IsDesignTimeCreatable=True}">
+    <Window.Resources>
+        <converters:InstanceToVisibilityConverter x:Key="InstanceToVisibilityConverter" />
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Image Grid.Row="0"
+               Margin="0,0,0,5"
+               Source="{Binding ImagePath}"
+               Visibility="{Binding ImagePath, Converter={StaticResource InstanceToVisibilityConverter}}" />
+
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding LoadingSteps}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,0,0,5">
+                        <ProgressBar Value="{Binding Current}"
+                                     Minimum="{Binding Minimum}"
+                                     Maximum="{Binding Maximum}"
+                                     IsIndeterminate="{Binding IsIndeterminate}"
+                        />
+                        <Label Content="{Binding Label}"
+                               HorizontalAlignment="Stretch"
+                               HorizontalContentAlignment="Center"
+                               VerticalAlignment="Stretch"
+                               VerticalContentAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Grid.Row="4" Margin="0,0,0,0" Content="{extensions:I18N Cancel}" Click="Cancel_OnClick" Height="27" />
+    </Grid>
+</Window>
