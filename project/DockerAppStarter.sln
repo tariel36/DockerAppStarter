@@ -12,6 +12,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root", "Root", "{B9D233BF-3
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Assets", "Assets", "{CD9C7136-684C-4DB6-B781-62E9A39A64EB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{91E22FBC-E72C-41BC-BD1F-C3E6B88C2A7A}"
+	ProjectSection(SolutionItems) = preProject
+		..\Assets\Images\starting.png = ..\Assets\Images\starting.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +32,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CD9C7136-684C-4DB6-B781-62E9A39A64EB} = {B9D233BF-3C83-4022-B253-BFEEF7F3600F}
+		{91E22FBC-E72C-41BC-BD1F-C3E6B88C2A7A} = {CD9C7136-684C-4DB6-B781-62E9A39A64EB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3DFDE4F3-F189-46D9-ABED-CAF87B4D533F}
