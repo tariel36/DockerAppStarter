@@ -38,6 +38,11 @@ namespace DockerAppStarter.Gui.Internationalization
             }
         }
 
+        public string this[string key]
+        {
+            get { return _resourceManager.OrCallerThrow(nameof(_resourceManager)).GetString(key, _currentCulture).OrFallback(CreateFallbackValue(key)); }
+        }
+
         public string GetValueOrDefault(string key)
         {
             return ResolveString(key);
