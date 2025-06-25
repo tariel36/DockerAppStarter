@@ -129,6 +129,9 @@
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="ComposeFilePathIsRequired" xml:space="preserve">
+    <value>Compose File path is required.</value>
+  </data>
   <data name="DependencyServiceNotFound" xml:space="preserve">
     <value>Dependency service `{0}` not found.</value>
   </data>

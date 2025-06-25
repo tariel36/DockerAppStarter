@@ -127,15 +127,29 @@ namespace DockerAppStarter.Gui.View.Windows.MainWindowWindow
 
         private async Task DockerServiceStarter(StartupConfiguration serviceConfig, StartProcessIndicatorCallbackContext ctx)
         {
-            string containerFullName = _dockerService.Combine(
-                serviceConfig.Stack,
-                serviceConfig.Service.OrCallerThrow(TranslationProvider.Instance.GetValueOrDefault(static () => Translations.DockerServiceNameNotSet)));
+            if (serviceConfig.RestartCompose)
+            {
+                string composeFilePath = serviceConfig.ComposeFilePath.OrCallerThrow(
+                    TranslationProvider.Instance.GetValueOrDefault(static () => Translations.ComposeFilePathIsRequired));
 
-            await _dockerService.StartAsync(
-                containerFullName,
-                ctx.CancellationToken);
+                await _dockerService.RestartComposeAsync(
+                    composeFilePath,
+                    ctx.CancellationToken);
 
-            ctx.Complete(await _dockerService.IsRunningAsync(containerFullName, ctx.CancellationToken));
+                ctx.Complete(await _dockerService.IsComposeRunningAsync(composeFilePath, ctx.CancellationToken));
+            }
+            else
+            {
+                string containerFullName = _dockerService.Combine(
+                    serviceConfig.Stack,
+                    serviceConfig.Service.OrCallerThrow(TranslationProvider.Instance.GetValueOrDefault(static () => Translations.DockerServiceNameNotSet)));
+
+                await _dockerService.StartAsync(
+                    containerFullName,
+                    ctx.CancellationToken);
+
+                ctx.Complete(await _dockerService.IsRunningAsync(containerFullName, ctx.CancellationToken));
+            }
         }
 
         private async Task IsServiceRunning(StartProcessIndicatorCallbackContext ctx)

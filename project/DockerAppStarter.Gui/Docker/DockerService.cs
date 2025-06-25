@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -6,14 +7,17 @@ using DockerAppStarter.Gui.Assets.I18N;
 using DockerAppStarter.Gui.Core;
 using DockerAppStarter.Gui.Extensions;
 using DockerAppStarter.Gui.Internationalization;
+using YamlDotNet.RepresentationModel;
 
 namespace DockerAppStarter.Gui.Docker
 {
     internal class DockerService
     {
         private const string ContainerStateRunning = "running";
-        private const string StartupCommand = "docker";
+        private const string DockerCommand = "docker";
         private const string DockerStartCommand = "start";
+        private const string DockerComposeUpCommand = "compose -f {0} up -d";
+        private const string DockerComposeDownCommand = "compose -f {0} down";
 
         private const int MinimumDockerProcesses = 1;
 
@@ -35,25 +39,46 @@ namespace DockerAppStarter.Gui.Docker
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                try
-                {
-                    IList<ContainerListResponse>? res = await _dockerClient.Containers
-                        .ListContainersAsync(
-                            new()
-                            {
-                                All = true
-                            },
-                            cancellationToken);
+                bool? isRunning = await IsContainerRunning(containerName, cancellationToken);
 
-                    return res.FirstOrDefault(
-                               y =>
-                                   y.Names.Any(z => z.Contains(containerName, StringComparison.InvariantCultureIgnoreCase))
-                                   && y.State == ContainerStateRunning)
-                           != null;
-                }
-                catch
+                if (isRunning.HasValue)
                 {
-                    // Ignore
+                    return isRunning.Value;
+                }
+
+                await Task.Delay(TimeConstants.Ms100, cancellationToken);
+            }
+
+            return false;
+        }
+
+        public async Task<bool> IsComposeRunningAsync(string composeFilePath, CancellationToken cancellationToken = default)
+        {
+            if (!File.Exists(composeFilePath))
+            {
+                throw new FileNotFoundException(composeFilePath);
+            }
+
+            DockerCompose composeFile = LoadComposeFile(composeFilePath);
+
+            string [] containers = composeFile.Services
+                .OrEmpty()
+                .WhereNot(static x => string.IsNullOrWhiteSpace(x.Name))
+                .Select(static x => x.Name.OrEmpty())
+                .ToArray();
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                bool? [] runningResults = await Task.WhenAll(containers.Select(x => IsContainerRunning(x, cancellationToken)).ToArray());
+
+                if (runningResults.All(static x => x.HasValue && x.Value))
+                {
+                    return true;
+                }
+
+                if (runningResults.All(static x => x.HasValue && !x.Value))
+                {
+                    return false;
                 }
 
                 await Task.Delay(TimeConstants.Ms100, cancellationToken);
@@ -135,22 +160,31 @@ namespace DockerAppStarter.Gui.Docker
 
             while (!await IsRunningAsync(containerName, cancellationToken))
             {
-                try
-                {
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = StartupCommand,
-                        Arguments = string.Join(TextConstants.Space, args),
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        CreateNoWindow = true
-                    };
+                ExecuteProcess(string.Empty, args);
 
-                    using Process? _ = Process.Start(startInfo);
-                }
-                catch
-                {
-                    // Ignore
-                }
+                await Task.Delay(TimeSpan.FromMilliseconds(1000), cancellationToken);
+            }
+        }
+
+        public async Task RestartComposeAsync(string composeFilePath, CancellationToken cancellationToken = default)
+        {
+            if (!File.Exists(composeFilePath))
+            {
+                throw new FileNotFoundException(composeFilePath);
+            }
+
+            string composeDirectory = Path.GetDirectoryName(composeFilePath).OrCallerThrow();
+
+            while (await IsComposeRunningAsync(composeFilePath, cancellationToken))
+            {
+                ExecuteProcess(composeDirectory, string.Format(DockerComposeDownCommand, composeFilePath));
+
+                await Task.Delay(TimeSpan.FromMilliseconds(1000), cancellationToken);
+            }
+
+            while (!await IsComposeRunningAsync(composeFilePath, cancellationToken))
+            {
+                ExecuteProcess(composeDirectory, string.Format(DockerComposeUpCommand, composeFilePath));
 
                 await Task.Delay(TimeSpan.FromMilliseconds(1000), cancellationToken);
             }
@@ -161,6 +195,77 @@ namespace DockerAppStarter.Gui.Docker
             return new [] { stackName, serviceName }
                 .WhereNot(string.IsNullOrWhiteSpace)
                 .Join(TextConstants.Hyphen);
+        }
+
+        private async Task<bool?> IsContainerRunning(string containerName, CancellationToken cancellationToken)
+        {
+            try
+            {
+                IList<ContainerListResponse>? res = await _dockerClient.Containers
+                    .ListContainersAsync(
+                        new()
+                        {
+                            All = true
+                        },
+                        cancellationToken);
+
+                ContainerListResponse? svc = res.FirstOrDefault(
+                    y =>
+                        y.Names.Any(z => z.Contains(containerName, StringComparison.InvariantCultureIgnoreCase))
+                        && y.State == ContainerStateRunning);
+
+                return svc != null;
+            }
+            catch
+            {
+                // Ignore
+            }
+
+            return null;
+        }
+
+        private static void ExecuteProcess(string workingDirectory, params string [] args)
+        {
+            try
+            {
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = DockerCommand,
+                    Arguments = string.Join(TextConstants.Space, args),
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    WorkingDirectory = workingDirectory
+                };
+
+                using Process? p = Process.Start(startInfo);
+
+                p?.WaitForExit();
+            }
+            catch
+            {
+                // Ignore
+            }
+        }
+
+        private static DockerCompose LoadComposeFile(string filePath)
+        {
+            YamlStream yamlStream = new();
+            yamlStream.Load(new StringReader(File.ReadAllText(filePath)));
+            YamlMappingNode root = (YamlMappingNode) yamlStream.Documents[0].RootNode;
+            YamlScalarNode name = (YamlScalarNode) root.Children[new YamlScalarNode("name")];
+            YamlMappingNode services = (YamlMappingNode) root.Children[new YamlScalarNode("services")];
+
+            return new()
+            {
+                Name = name.Value,
+                Services = services.Children
+                    .Select(
+                        static x => new DockerComposeService
+                        {
+                            Name = ((YamlMappingNode) x.Value).Children[new YamlScalarNode("container_name")].ToString()
+                        })
+                    .ToList()
+            };
         }
     }
 }

@@ -14,6 +14,10 @@
 
         public string? ImageFilePath { get; init; }
 
+        public string? ComposeFilePath { get; init; }
+
+        public bool RestartCompose { get; init; }
+
         public IReadOnlyCollection<StartupConfiguration>? Dependencies { get; init; }
     }
 }

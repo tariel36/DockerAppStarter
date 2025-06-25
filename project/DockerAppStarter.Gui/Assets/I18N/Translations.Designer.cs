@@ -97,6 +97,15 @@ namespace DockerAppStarter.Gui.Assets.I18N {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Compose File path is required..
+        /// </summary>
+        internal static string ComposeFilePathIsRequired {
+            get {
+                return ResourceManager.GetString("ComposeFilePathIsRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Dependency service `{0}` not found..
         /// </summary>
         internal static string DependencyServiceNotFound {

@@ -39,6 +39,8 @@ Example file
 	"Service": "ghost-1",
 	"ImageFilePath": "D:\\data\\DockerAppStarter\\ghost.png",
 	"IconFilePath": "D:\\data\\DockerAppStarter\\ghost.ico",
+	"RestartCompose": false,
+	"ComposeFilePath": "D:\\dev\\docker\\compose\\ghost\\docker-compose.yml",
 	"Dependencies": [
 		{
 			"WindowTitle": "Ghost DB",
@@ -63,6 +65,8 @@ The properties are as follow:
 | Service | Single service within stack. |
 | ImageFilePath | Path to the image that will be shown. |
 | IconFilePath | Path to icon that will be shown wihin app title bar. |
+| RestartCompose | Determiens whether full docker compose restart should be performed when starting the app. |
+| ComposeFilePath | Absolute file path to related compose file. |
 | Dependencies | Collection of dependencies. Each element has same structure. |
 
 ## Limitations
